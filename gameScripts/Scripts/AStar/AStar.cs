@@ -7,7 +7,7 @@ public class AStar : MonoBehaviour
 {
     //path[]存储路径
 
-    public List<MyNode> FindPath(MyGridIndex startGrid,MyGridIndex endGrid) 
+    public List<MyNode> FindPath(MyGridIndex startGrid, MyGridIndex endGrid)
     {
         Dictionary<MyNode, MyNode> cameFrom = new Dictionary<MyNode, MyNode>();     //到达该节点的上一个节点
         Dictionary<MyNode, float> cost = new Dictionary<MyNode, float>();           //初始节点到当前节点的代价
@@ -15,20 +15,20 @@ public class AStar : MonoBehaviour
         //优先队列
         PriorityQueue priorityQueue = new PriorityQueue();
 
-        MyNode startNode = MyGrid.instance.nodes[startGrid.x, startGrid.y, startGrid.h];
-        MyNode endNode = MyGrid.instance.nodes[endGrid.x, endGrid.y, startGrid.h];
+        MyNode startNode = MyGrid.instance.nodes[startGrid.x, startGrid.y];
+        MyNode endNode = MyGrid.instance.nodes[endGrid.x, endGrid.y];
 
         cameFrom[startNode] = null;
         cost[startNode] = 0;
 
         priorityQueue.Push(startNode, 0);
 
-        while (priorityQueue.GetCount() > 0) 
+        while (priorityQueue.GetCount() > 0)
         {
             MyNode front = (MyNode)priorityQueue.Pop();
             if (front == endNode) break;
 
-            foreach (MyNode node in GetNeighbors(front)) 
+            foreach (MyNode node in GetNeighbors(front))
             {
                 float newGCost = cost[front] + GetDistance(front, node);
                 if (!cost.ContainsKey(node) || cost[node] > newGCost)    //如果相邻节点没被检查过或发现了到该单元格花费更少的路径则更新
@@ -45,21 +45,18 @@ public class AStar : MonoBehaviour
     }
 
     //启发式函数(曼哈顿距离)
-    private float heuristic(MyNode currentNode, MyNode endNode) 
+    private float heuristic(MyNode currentNode, MyNode endNode)
     {
-        float dx = Mathf.Abs(currentNode.x - endNode.x);
-        float dy = Mathf.Abs(currentNode.y - endNode.y);
-        float dh = Mathf.Abs(currentNode.h - endNode.h) * 5f; //5f为高度影响的权重
-        return dx + dy + dh;
+        return Mathf.Abs(currentNode.x - endNode.x) + Mathf.Abs(currentNode.y - endNode.y);
     }
 
     //寻找相邻节点（八方向）
-    private List<MyNode> GetNeighbors(MyNode node) 
+    private List<MyNode> GetNeighbors(MyNode node)
     {
         List<MyNode> neighbors = new List<MyNode>();
-        for (int i = -1; i <= 1; i++) 
+        for (int i = -1; i <= 1; i++)
         {
-            for (int j = -1; j <= 1; j++) 
+            for (int j = -1; j <= 1; j++)
             {
                 if (i == 0 && j == 0) continue; //跳过自身
                 int nx = node.x + i;
@@ -93,7 +90,7 @@ public class AStar : MonoBehaviour
     }
 
     //相邻节点的距离（没有地形代价）
-    private float GetDistance(MyNode currentNode, MyNode lastNode) 
+    private float GetDistance(MyNode currentNode, MyNode lastNode)
     {
         int dx = Mathf.Abs(currentNode.x - lastNode.x);
         int dy = Mathf.Abs(currentNode.y - lastNode.y);
@@ -101,7 +98,7 @@ public class AStar : MonoBehaviour
         return 1.414f;                // 对角（√2）
     }
 
-    private List<MyNode> GetPath(MyNode startNode,MyNode endNode, Dictionary<MyNode, MyNode> cameFrom) 
+    private List<MyNode> GetPath(MyNode startNode, MyNode endNode, Dictionary<MyNode, MyNode> cameFrom)
     {
         if (!cameFrom.ContainsKey(endNode)) return null;  //若endNode不存在，则无路径
 
@@ -109,7 +106,7 @@ public class AStar : MonoBehaviour
         path.Add(endNode);
         MyNode currentNode = endNode;
 
-        while (currentNode != startNode) 
+        while (currentNode != startNode)
         {
             currentNode = cameFrom[currentNode];
             path.Add(currentNode);
