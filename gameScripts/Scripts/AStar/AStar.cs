@@ -15,8 +15,9 @@ public class AStar : MonoBehaviour
         //优先队列
         PriorityQueue priorityQueue = new PriorityQueue();
 
-        MyNode startNode = MyGrid.instance.nodes[startGrid.x, startGrid.y];
-        MyNode endNode = MyGrid.instance.nodes[endGrid.x, endGrid.y];
+        MyNode startNode = MyGrid.instance.nodes[startGrid.x, startGrid.y, startGrid.h];
+        MyNode endNode = MyGrid.instance.nodes[endGrid.x, endGrid.y, endGrid.h];
+        int mapheight = Mathf.Max(startNode.h, endNode.h);  //启动最高层地图层
 
         cameFrom[startNode] = null;
         cost[startNode] = 0;
@@ -28,7 +29,7 @@ public class AStar : MonoBehaviour
             MyNode front = (MyNode)priorityQueue.Pop();
             if (front == endNode) break;
 
-            foreach (MyNode node in GetNeighbors(front))
+            foreach (MyNode node in GetNeighbors(front,mapheight))
             {
                 float newGCost = cost[front] + GetDistance(front, node);
                 if (!cost.ContainsKey(node) || cost[node] > newGCost)    //如果相邻节点没被检查过或发现了到该单元格花费更少的路径则更新
@@ -51,7 +52,7 @@ public class AStar : MonoBehaviour
     }
 
     //寻找相邻节点（八方向）
-    private List<MyNode> GetNeighbors(MyNode node)
+    private List<MyNode> GetNeighbors(MyNode node, int h)
     {
         List<MyNode> neighbors = new List<MyNode>();
         for (int i = -1; i <= 1; i++)
@@ -62,27 +63,27 @@ public class AStar : MonoBehaviour
                 int nx = node.x + i;
                 int ny = node.y + j;
                 if (nx < 0 || ny < 0 || nx >= MyGrid.instance.Width || ny >= MyGrid.instance.Height) continue;    //坐标超出范围则跳过
-                if (MyGrid.instance.nodes[nx, ny].walkable == false) continue;      //如果该单元格为碰撞体则跳过
+                if (MyGrid.instance.nodes[nx, ny, h].walkable == false) continue;     //如果该单元格为碰撞体则跳过
 
                 //对角检测：对角线移动时，必须同时保证两个相邻的直线方向也是可走的
                 if (i == 0 || j == 0)//直线移动直接添加
                 {
-                    neighbors.Add(MyGrid.instance.nodes[nx, ny]);
+                    neighbors.Add(MyGrid.instance.nodes[nx, ny, h]);
                     continue;
                 }
 
                 bool canDiagonal = true;
                 // 检查水平方向的中间格
-                if (!MyGrid.instance.nodes[node.x + i, node.y].walkable)
+                if (!MyGrid.instance.nodes[node.x + i, node.y, h].walkable) 
                     canDiagonal = false;
 
                 // 检查垂直方向的中间格
-                if (!MyGrid.instance.nodes[node.x, node.y + j].walkable)
+                if (!MyGrid.instance.nodes[node.x, node.y + j, h].walkable) 
                     canDiagonal = false;
 
                 if (canDiagonal)
                 {
-                    neighbors.Add(MyGrid.instance.nodes[nx, ny]);
+                    neighbors.Add(MyGrid.instance.nodes[nx, ny, h]);
                 }
             }
         }
