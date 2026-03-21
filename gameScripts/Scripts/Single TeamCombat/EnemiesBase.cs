@@ -6,6 +6,7 @@ public class EnemiesBase : MonoBehaviour
 {
     public float maxHealth, currentHealth;  //最大生命值/当前生命值
     public float moveSpeed;
+    public int height = 0; //该对象所处的高度层
 
     [Header("普通攻击范围/攻击伤害")]
     public float attackRange;

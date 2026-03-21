@@ -17,8 +17,8 @@ public class AStar : MonoBehaviour
 
         MyNode startNode = MyGrid.instance.nodes[startGrid.x, startGrid.y, startGrid.h];
         MyNode endNode = MyGrid.instance.nodes[endGrid.x, endGrid.y, endGrid.h];
-        int mapheight = Mathf.Max(startNode.h, endNode.h);  //启动最高层地图层
-
+        int mapheight = Mathf.Max(startGrid.h, endGrid.h);  //启动最高层地图层
+        Debug.Log("所选地图碰撞层为：" + mapheight);
         cameFrom[startNode] = null;
         cost[startNode] = 0;
 
@@ -63,7 +63,7 @@ public class AStar : MonoBehaviour
                 int nx = node.x + i;
                 int ny = node.y + j;
                 if (nx < 0 || ny < 0 || nx >= MyGrid.instance.Width || ny >= MyGrid.instance.Height) continue;    //坐标超出范围则跳过
-                if (MyGrid.instance.nodes[nx, ny, h].walkable == false) continue;     //如果该单元格为碰撞体则跳过
+                if (MyGrid.instance.nodes[nx, ny, h] == null || MyGrid.instance.nodes[nx, ny, h].walkable == false) continue;     //如果该单元格为null或为碰撞体则跳过
 
                 //对角检测：对角线移动时，必须同时保证两个相邻的直线方向也是可走的
                 if (i == 0 || j == 0)//直线移动直接添加

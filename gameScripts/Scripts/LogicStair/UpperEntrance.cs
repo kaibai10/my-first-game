@@ -4,21 +4,21 @@ using UnityEngine;
 
 public class UpperEntrance : MonoBehaviour
 {
-    private StairArea parent;
+    private StairArea stair;
 
     // Start is called before the first frame update
     void Start()
     {
-        parent = GetComponentInParent<StairArea>();
+        stair = GetComponentInParent<StairArea>();
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.tag == "Controllable" || collision.tag == "Enemy") 
         {
-            if (parent != null) 
+            if (stair != null) 
             {
-                parent.HandleChildTrigger(collision, gameObject);
+                stair.HandleChildTrigger(collision, gameObject);
             }
         }
     }

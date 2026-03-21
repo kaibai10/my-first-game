@@ -33,27 +33,61 @@ public class MyGrid : MonoBehaviour
         nodes = new MyNode[Width, Height, mapHeight];
         minCell = maps[0].cellBounds.min;
 
+        foreach (var map in maps)
+        {
+            map.origin = maps[0].origin;  // 强制所有层用底层 origin
+            map.CompressBounds();         // 压缩，但不改 origin
+        }
+
         BuildGrid();
     }
 
-    private void BuildGrid() 
+    private void BuildGrid()
     {
+        //导致地图大小很大的原因
+        //// 先找到全局最小的 min（所有层的最左下）
+        //Vector3Int globalMin = maps[0].cellBounds.min;
+        //foreach (var map in maps)
+        //{
+        //    globalMin = Vector3Int.Min(globalMin, map.cellBounds.min);
+        //}
+
+        //// 然后用 globalMin 作为统一原点
+        //minCell = globalMin;
+
+        //// Width/Height 用全局最大范围
+        //Vector3Int globalMax = maps[0].cellBounds.max;
+        //foreach (var map in maps)
+        //{
+        //    globalMax = Vector3Int.Max(globalMax, map.cellBounds.max);
+        //}
+        //Width = globalMax.x - globalMin.x;
+        //Height = globalMax.y - globalMin.y;
+
+        nodes = new MyNode[Width, Height, mapHeight];
+
         for (int h = 0; h < mapHeight; h++)
         {
+            var map = maps[h];
             for (int i = 0; i < Width; i++)
             {
                 for (int j = 0; j < Height; j++)
                 {
-                    Vector3Int cellPos = minCell + new Vector3Int(i, j, 0);     //单元格在Tilemap中的位置
-                    Vector2 pos = maps[h].GetCellCenterWorld(cellPos);              //单元格的世界逻辑位置
-                    Tile.ColliderType type = maps[h].GetColliderType(cellPos);
-                    TileBase tile = maps[h].GetTile(cellPos);
-                    bool walkable = tile != null && type == Tile.ColliderType.None;
+                    Vector3Int localCell = minCell + new Vector3Int(i, j, 0);
+                    Vector3 worldCenter = map.GetCellCenterWorld(localCell);
+                    TileBase tile = map.GetTile(localCell);
+                    Tile.ColliderType col = map.GetColliderType(localCell);
 
-                    MyNode node = new MyNode(i, j, h, pos, walkable);
-                    for (int t = h; t < mapHeight; t++) //让底层单元格覆盖到每一层高层单元格
+                    bool walkable = tile != null && col == Tile.ColliderType.None;
+
+                    MyNode node = new MyNode(i, j, h, (Vector2)worldCenter, walkable);
+
+                    Debug.Log($"单元格({i},{j},{h})初始化完成,其tile是否存在：{tile},其walkable为:{walkable}");
+                    // 底层 node 向上层复制
+                    if (tile == null) continue;
+                    for (int t = h; t < mapHeight; t++)
                     {
-                        nodes[i, j, h] = node;
+                        nodes[i, j, t] = node;  // 注意：这里 t 从 h 开始，但通常想让低层覆盖高层空位
                     }
                 }
             }

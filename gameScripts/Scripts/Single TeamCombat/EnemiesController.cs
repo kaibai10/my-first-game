@@ -121,11 +121,15 @@ public class EnemiesController : EnemiesBase
         Vector3 endPos = hateTarget.transform.position;
 
         //转化为tilemap网格坐标
-        Vector2Int startNode = MyGrid.instance.WorldToGridIndex(startPos);
-        Vector2Int endNode = MyGrid.instance.WorldToGridIndex(endPos);
+        Vector3Int startNode = MyGrid.instance.WorldToGridIndex(startPos);
+        Vector3Int endNode = MyGrid.instance.WorldToGridIndex(endPos);
 
-        MyGridIndex startIdx = new MyGridIndex(startNode.x, startNode.y);
-        MyGridIndex endIdx = new MyGridIndex(endNode.x, endNode.y);
+        startNode.z = height;
+        endNode.z = hateTarget.GetComponent<LeaderController>().height;
+        Debug.Log("自身高度：" + startNode.z); Debug.Log("目标高度：" + endNode.z);
+
+        MyGridIndex startIdx = new MyGridIndex(startNode.x, startNode.y, startNode.z);
+        MyGridIndex endIdx = new MyGridIndex(endNode.x, endNode.y, endNode.z);
 
         //寻找路径点
         List<MyNode> path = AStar.FindPath(startIdx, endIdx);
