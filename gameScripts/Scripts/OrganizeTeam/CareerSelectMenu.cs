@@ -36,6 +36,7 @@ public class CareerSelectMenu : MonoBehaviour
         characterViewMinYPos = characterView.GetComponent<RectTransform>().anchoredPosition.y - 160f;
     }
 
+    //职业栏显示/隐藏控制
     public void ShowAllCareer() 
     {
         if (isShowCareer == false)

@@ -39,11 +39,6 @@ public class PageTransition : MonoBehaviour
         personalProfileMinXPos = personalProfile.GetComponent<RectTransform>().anchoredPosition.x;
         menusMinXPos = careerMenu.GetComponent<RectTransform>().anchoredPosition.x - 172;
         characterIllustrationMinXPos = characterIllustration.GetComponent<RectTransform>().anchoredPosition.x - 172;
-        
-        //detailedAttributesMinXPos = detailedAttributes.transform.position.x;
-        //personalProfileMinXPos = personalProfile.transform.position.x;
-        //menusMinXPos = careerMenu.transform.position.x - 172;
-        //characterIllustrationMinXPos = characterIllustration.transform.position.x - 172;
     }
 
     public void GoToNextPage() 

@@ -18,7 +18,7 @@ public class AStar : MonoBehaviour
         MyNode startNode = MyGrid.instance.nodes[startGrid.x, startGrid.y, startGrid.h];
         MyNode endNode = MyGrid.instance.nodes[endGrid.x, endGrid.y, endGrid.h];
         int mapheight = Mathf.Max(startGrid.h, endGrid.h);  //启动最高层地图层
-        Debug.Log("所选地图碰撞层为：" + mapheight);
+
         cameFrom[startNode] = null;
         cost[startNode] = 0;
 

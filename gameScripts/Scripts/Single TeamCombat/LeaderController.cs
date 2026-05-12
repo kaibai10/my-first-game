@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class LeaderController : Character
+public class LeaderController : Character, AllUnitAttributeModify
 {
     public bool is_Leader;
     private Vector3 moveInput = new Vector3(0f, 0f, 0f);
@@ -12,14 +12,13 @@ public class LeaderController : Character
     private Vector3 toward;
     private float angle;
     private float initialXoffset, initialYoffset;
-    [Tooltip("触发器y值偏移量")]
-    public float targetYoffsetDifference;
-    [Tooltip("首次伤害触发时间")]
-    public float startDamageTime;//首次伤害触发时间
-    [Tooltip("攻击间隔")]
-    public float timeBetweenAttacks;//攻击间隔
+
+    [Tooltip("触发器y值偏移量")] public float targetYoffsetDifference;
+    [Tooltip("首次伤害触发时间")] public float startDamageTime;
+    [Tooltip("攻击间隔")] public float timeBetweenAttacks;
     private float timeCounter = 0;
     private bool resetTimeCounter = true;
+    public SkillController skillcontroller;
 
     //鼠标控制参数
     [HideInInspector]
@@ -28,39 +27,30 @@ public class LeaderController : Character
     //当前激活的SkillTrigger
     [HideInInspector]
     public SkillTrigger currentTrigger;
-    public enum skillType
+    public enum skillSlot
     { attack, skill_1, skill_2, skill_3 }
-    public Dictionary<skillType, SkillTrigger> skillTriggers = new Dictionary<skillType, SkillTrigger>();
+    public Dictionary<skillSlot, SkillTrigger> skillTriggers = new Dictionary<skillSlot, SkillTrigger>();
 
-    [HideInInspector]
-    public skillType nextSkill;//移动到目标位置后要释放的技能
-    [HideInInspector]
-    public float nextAngle;//要释放的技能的角度
-
-    [HideInInspector]
-    public Vector3 nextPosition;//范围型技能释放的中心
-    [HideInInspector]
-    public GameObject nextPrefab;//范围型技能预制体
-
-    //是否有技能处于触发状态（避免同时多个技能被触发）
-    [HideInInspector]
-    public bool haveSkillIsActivation = false;
+    [HideInInspector] public skillSlot pendingSkill;//移动到目标位置后要释放的技能
+    [HideInInspector] public SkillContext pendingContext;//待释放技能的上下文
+    [HideInInspector] public bool haveSkillIsActivation = false;//是否有技能处于触发状态（避免同时多个技能被触发）
 
     private AStar aStar;
     private ShowPath showPath;
 
     private void Start()
     {
-        initialXoffset = skills[0].transform.localPosition.x;
-        initialYoffset = skills[0].transform.localPosition.y;
+        skillcontroller = gameObject.GetComponent<SkillController>();
+        initialXoffset = skillcontroller.equippedSkills[0].transform.localPosition.x;
+        initialYoffset = skillcontroller.equippedSkills[0].transform.localPosition.y;
 
-        skillTriggers.Add(skillType.attack, normalAttack.GetComponentInChildren<SkillTrigger>());
-        skillTriggers.Add(skillType.skill_1, skills[0].GetComponentInChildren<SkillTrigger>());
-        skillTriggers.Add(skillType.skill_2, skills[1].GetComponentInChildren<SkillTrigger>());
-        skillTriggers.Add(skillType.skill_3, skills[2].GetComponentInChildren<SkillTrigger>());
+        skillTriggers.Add(skillSlot.attack, normalAttack.GetComponentInChildren<SkillTrigger>());
+        skillTriggers.Add(skillSlot.skill_1, skillcontroller.equippedSkills[0].GetComponentInChildren<SkillTrigger>());
+        skillTriggers.Add(skillSlot.skill_2, skillcontroller.equippedSkills[1].GetComponentInChildren<SkillTrigger>());
+        skillTriggers.Add(skillSlot.skill_3, skillcontroller.equippedSkills[2].GetComponentInChildren<SkillTrigger>());
 
         //默认为普通攻击
-        currentTrigger = skillTriggers[skillType.attack];
+        currentTrigger = skillTriggers[skillSlot.attack];
     }
 
     private void Update()
@@ -70,15 +60,13 @@ public class LeaderController : Character
 
         if (targetPosition == Vector3.zero) // 移動完成後
         {
-            if (nextSkill != skillType.attack && nextAngle != 0)
+            if (pendingSkill != skillSlot.attack && pendingContext.angle != 0)
             {
-                NextAngleSkillActivation(nextAngle);
-                ResetNextSkillData();
+                clearPendingSkill();
             }
-            else if (nextSkill != skillType.attack && nextPosition != Vector3.zero)
+            else if (pendingSkill != skillSlot.attack && pendingContext.position != Vector3.zero)
             {
-                NextPosSkillActivation(nextPosition);
-                ResetNextSkillData();
+                clearPendingSkill();
             }
         }
         else
@@ -103,19 +91,6 @@ public class LeaderController : Character
                 }
             }
         }
-
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            ToggleSkill(skillType.skill_1);
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            ToggleSkill(skillType.skill_2);
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha3))
-        {
-            ToggleSkill(skillType.skill_3);
-        }
     }
 
     void MoveWithMouse(Vector3 targetMovePosition)
@@ -127,7 +102,7 @@ public class LeaderController : Character
         if (moveDitance > 0.1f)
         {
             MouseClickEventsController.instance.character_Move_Mouse = true;
-            anim.SetBool("Enemies_Survival", false);
+            anim.SetBool("Is_Attacking", false);
             skele.skeleton.ScaleX = moveDirection.x < 0 ? -1f : 1f;
             anim.SetBool("Is_Moving", true);
             transform.position += moveDirection.normalized * moveSpeed * Time.deltaTime;
@@ -143,27 +118,11 @@ public class LeaderController : Character
         }
     }
 
-    //移动结束后的范围型技能释放
-    void NextPosSkillActivation(Vector3 pos) 
-    {
-        GameObject prefab = Instantiate(nextPrefab, nextPosition, Quaternion.identity);
-        prefab.SetActive(true);
-    }
-
-    //移动结束后的指向性技能释放
-    void NextAngleSkillActivation(float angle) 
-    {
-        ToggleSkill(nextSkill);
-        currentTrigger.transform.parent.gameObject.transform.rotation = Quaternion.Euler(0f, 0f, angle);
-    }
-
     //重置数据，避免重复触发
-    void ResetNextSkillData() 
+    void clearPendingSkill() 
     {
-        nextAngle = 0;
-        nextPosition = Vector3.zero;
-        nextPrefab = null;
-        nextSkill = skillType.attack;
+        pendingSkill = skillSlot.attack;
+        pendingContext = default;
     }
 
     //键盘位置控制旋转  注：（下面这部分需要修改，每次只判断一个部分）
@@ -215,25 +174,10 @@ public class LeaderController : Character
         }
     }
 
-
-    //技能切换
-    public void ToggleSkill(skillType type)
-    {
-        if (skillTriggers[type] != currentTrigger)
-        {
-            //关闭当前状态
-            currentTrigger.transform.parent.gameObject.SetActive(false);
-
-            //激活目标状态
-            currentTrigger = skillTriggers[type];
-            skillTriggers[type].transform.parent.gameObject.SetActive(true);
-        }
-    }
-
     void Attack()
     {
         bool hasEnemies = currentTrigger.enemies != null && currentTrigger.enemies.Count > 0;
-        anim.SetBool("Enemies_Survival", hasEnemies);
+        anim.SetBool("Is_Attacking", hasEnemies);
 
         if (hasEnemies == false)
             resetTimeCounter = true;
@@ -252,7 +196,7 @@ public class LeaderController : Character
         }
     }
 
-    void Move()
+    void Move()  //想正常触发的话，环境中必须有挂载MouseClickEventsController的对象
     {
         if (MouseClickEventsController.instance.selectedCharacter_Skill_Release != true && MouseClickEventsController.instance.character_Move_Mouse != true)
         {
@@ -264,7 +208,7 @@ public class LeaderController : Character
             anim.SetFloat("Move_Y", moveInput.y);
             if (moveInput != Vector3.zero)
             {
-                anim.SetBool("Enemies_Survival", false);
+                anim.SetBool("Is_Attacking", false);
                 skele.skeleton.ScaleX = moveInput.x < 0 ? -1f : 1f;
                 anim.SetBool("Is_Moving", true);
 
@@ -282,5 +226,21 @@ public class LeaderController : Character
             }
             transform.position += moveInput * moveSpeed * Time.deltaTime;
         }
+    }
+
+    public void ApplyBuffModify(CharacterAttribute characterAttribute) 
+    {
+        if (characterAttribute.addAttack != 0) { attackDamage *= (1 + characterAttribute.addAttack); }
+        if (characterAttribute.addHealth != 0) { maxHealth *= (1 + characterAttribute.addHealth); }
+        if (characterAttribute.addMagicResistance != 0) { magicResistance *= (1 + characterAttribute.addMagicResistance); }
+        if (characterAttribute.addArmorResistance != 0) { armorResistance *= (1 + characterAttribute.addArmorResistance); }
+    }
+
+    public void RemoveBuffModify(CharacterAttribute characterAttribute) 
+    {
+        if (characterAttribute.addAttack != 0) { attackDamage /= (1 + characterAttribute.addAttack); }
+        if (characterAttribute.addHealth != 0) { maxHealth /= (1 + characterAttribute.addHealth); }
+        if (characterAttribute.addMagicResistance != 0) { magicResistance /= (1 + characterAttribute.addMagicResistance); }
+        if (characterAttribute.addArmorResistance != 0) { armorResistance /= (1 + characterAttribute.addArmorResistance); }
     }
 }

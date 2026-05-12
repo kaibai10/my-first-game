@@ -64,6 +64,8 @@ public class CharacterSelectSystem : MonoBehaviour
     public GameObject teamSelectPanel;
     public GameObject careerPanel;
 
+    public Image currentIllustration;   // 拖到Inspector
+
     //存储完全体的角色预制体(当前可以控制的角色)
     public List<GameObject> characterPrefabs = new List<GameObject>();
 
@@ -129,10 +131,10 @@ public class CharacterSelectSystem : MonoBehaviour
     }
 
     //更新角色列表
-    public void UpdateCharacterList() //List<LeaderController> theCharacterList
+    public void UpdateCharacterList()
     {
         currentCharacterList = careerCharacter[currentCareer];
-        currentCharacter = currentCharacterList[0];
+
         for (int i = 0; i < currentCharacterList.Count; i++) 
         {
             Toggle newCharacterBox = Instantiate(characterPrefab, characterToggleParent.transform);
@@ -142,6 +144,8 @@ public class CharacterSelectSystem : MonoBehaviour
             }
             CharacterToggle newCharacterScript = newCharacterBox.GetComponent<CharacterToggle>();
 
+            bool isCurrent = currentCharacter == currentCharacterList[i];
+            newCharacterBox.SetIsOnWithoutNotify(isCurrent);    //设置toggle的激活状态，且这种方法不会触发回调
             newCharacterBox.onValueChanged.AddListener(newCharacterScript.ActivedToggle);
 
             TMP_Text tmpInGameObject = newCharacterBox.GetComponentInChildren<TMP_Text>();
@@ -155,6 +159,59 @@ public class CharacterSelectSystem : MonoBehaviour
         }
     }
 
+    //更换角色时更新角色显示和技能显示
+    public void RefreshCurrentCharacterDisplay()
+    {
+        if (currentCharacter == null)
+        {
+            currentCharacterNameText.text = "";
+            if (currentIllustration != null)
+                currentIllustration.sprite = null;
+            return;
+        }
+
+        // 1. 刷新角色名
+        currentCharacterNameText.text = currentCharacter.characterName;
+
+        // 2. 刷新立绘
+        if (currentIllustration != null)
+            currentIllustration.sprite = currentCharacter.illustration;
+
+        // 3. 刷新三个已装备技能图标
+        SkillController skillController = currentCharacter.GetComponent<SkillController>();
+        if (skillController != null && SkillSelectSystem.instance != null)
+        {
+            while (skillController.equippedSkills.Count < 3)
+            {
+                skillController.equippedSkills.Add(null);
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                Sprite icon = null;
+                if (skillController.equippedSkills[i] != null)
+                {
+                    icon = skillController.equippedSkills[i].skillData.icon;
+                }
+
+                if (i < SkillSelectSystem.instance.selectedSkillButtonList.Count)
+                {
+                    SkillSelectSystem.instance.selectedSkillButtonList[i].UpdateButtonInfo(icon);
+                }
+            }
+        }
+
+        // 4. 刷新角色Toggle选中状态
+        for (int i = 0; i < characterToggles.Count; i++)
+        {
+            if (i < charactertoggles.Count && characterToggles[i] != null)
+            {
+                bool isCurrent = characterToggles[i].assignedCharacter == currentCharacter;
+                charactertoggles[i].SetIsOnWithoutNotify(isCurrent);
+            }
+        }
+    }
+
     //点击确认
     public void clickConfirm() 
     {
@@ -162,15 +219,10 @@ public class CharacterSelectSystem : MonoBehaviour
         SelectedCharacter.instance.AddInleaderControllers(currentCharacter);
         SelectedCharacter.instance.UpdatePanel();
 
-        //若未将角色/技能选择界面归位则，则调用GoToNextPage()
-        //if (PageTransition.instance.isNextPage == true) 
-        //{
-        //    PageTransition.instance.GoToNextPage();
-        //}
         careerPanel.gameObject.SetActive(false);
     }
 
-    //创建角色
+    //TeamSelectPanel：Button方法——创建角色
     public void CreateCharacters() 
     {
         List<GameObject> prefabs = new List<GameObject>();
@@ -193,27 +245,31 @@ public class CharacterSelectSystem : MonoBehaviour
 
         foreach (LeaderController lea in SelectedCharacter.instance.leaderControllers) 
         {
+            Debug.Log(SelectedCharacter.instance.leaderControllers.Count);  //3
             //prefabs.Contains(lea.characterName)
             foreach (GameObject mono in prefabs) 
             {
                 if (mono.gameObject.name == lea.characterName)
                 {
-                    Debug.Log("在prefabs中成功查找到" + lea.gameObject.name + "预制体");
+                    Debug.Log("在prefabs中成功查找到" + mono.gameObject.name + "预制体");
                     GameObject newGameObject = Instantiate(mono.gameObject);
                     DontDestroyOnLoad(newGameObject); //确保每个角色在创建后切换场景时不会被销毁
                     LeaderController newLeaderController = newGameObject.GetComponent<LeaderController>();  //获取创建的角色对象上的LeaderController组件
-                    foreach (Skill skill in lea.skills)
+
+                    for (int i = 0; i < 3; i++) 
                     {
+                        SkillBase skill = lea.skillcontroller.equippedSkills[i];
                         if (skill != null)
                         {
                             GameObject newSkillObject = Instantiate(skill.gameObject, newGameObject.transform); //将技能物体作为子物体添加到角色物体上
-                            Skill newSkill = newSkillObject.GetComponent<Skill>();  //获取技能对象上的Skill组件
-                            newLeaderController.skills.Add(newSkill);
+                            SkillBase newSkill = newSkillObject.GetComponent<SkillBase>();  //获取技能对象上的Skill组件
+                            newLeaderController.skillcontroller.equippedSkills[i] = newSkill;
                             Debug.Log("成功为角色" + newGameObject.name + "添加技能" + skill.name);
                         }
                     }
                     Debug.Log("角色" + newGameObject.name + "技能添加完毕");
                     characterPrefabs.Add(newGameObject);
+                    AllCharacter.leaderControllers.Add(newLeaderController);
                 }
             }
         }

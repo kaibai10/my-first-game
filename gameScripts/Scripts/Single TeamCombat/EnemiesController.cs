@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class EnemiesController : EnemiesBase
+public class EnemiesController : EnemiesBase ,AllUnitAttributeModify
 {
     private float distance; //当前物体与仇恨对象间的距离
     private LeaderController lastHateTarget;
@@ -43,7 +43,7 @@ public class EnemiesController : EnemiesBase
             if (lastHateTarget != hateTarget || hateTarget.anim.GetBool("Is_Moving")) //当仇恨目标改变 / 仇恨目标正常移动时,间隔获取路径点
             {
                 //当仇恨对象不为空且攻击对象不在攻击范围以内时更新
-                if (hateTarget != null && !anim.GetBool("Enemies_Survival"))
+                if (hateTarget != null && !anim.GetBool("Is_Attacking"))
                     GetMoveList();
             } 
         }
@@ -79,12 +79,12 @@ public class EnemiesController : EnemiesBase
     {
         if (Vector3.Distance(transform.position, hateTarget.transform.position) <= attackRange)
         {
-            anim.SetBool("Enemies_Survival", true);
+            anim.SetBool("Is_Attacking", true);
             //注：暂时未设置伤害逻辑TakeDamege
         }
         else 
         {
-            anim.SetBool("Enemies_Survival", false);
+            anim.SetBool("Is_Attacking", false);
         }
     }
 
@@ -126,7 +126,6 @@ public class EnemiesController : EnemiesBase
 
         startNode.z = height;
         endNode.z = hateTarget.GetComponent<LeaderController>().height;
-        Debug.Log("自身高度：" + startNode.z); Debug.Log("目标高度：" + endNode.z);
 
         MyGridIndex startIdx = new MyGridIndex(startNode.x, startNode.y, startNode.z);
         MyGridIndex endIdx = new MyGridIndex(endNode.x, endNode.y, endNode.z);
@@ -160,5 +159,21 @@ public class EnemiesController : EnemiesBase
             }
         }
         return hateTarget;
+    }
+
+    public void ApplyBuffModify(CharacterAttribute characterAttribute) 
+    {
+        if (characterAttribute.addAttack != 0) { attackDamage *= (1 + characterAttribute.addAttack); }
+        if (characterAttribute.addHealth != 0) { maxHealth *= (1 + characterAttribute.addHealth); }
+        if (characterAttribute.addMagicResistance != 0) { Debug.Log("修改法抗数值"); }
+        if (characterAttribute.addArmorResistance != 0) { Debug.Log("修改物抗数值"); }
+    }
+
+    public void RemoveBuffModify(CharacterAttribute characterAttribute) 
+    {
+        if (characterAttribute.addAttack != 0) { attackDamage /= (1 + characterAttribute.addAttack); }
+        if (characterAttribute.addHealth != 0) { maxHealth /= (1 + characterAttribute.addHealth); }
+        if (characterAttribute.addMagicResistance != 0) { Debug.Log("撤销修改法抗数值"); }
+        if (characterAttribute.addArmorResistance != 0) { Debug.Log("撤销修改物抗数值"); }
     }
 }

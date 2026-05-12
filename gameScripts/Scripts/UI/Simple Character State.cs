@@ -18,16 +18,16 @@ public class SimpleCharacterState : MonoBehaviour
     public TMP_Text nameText;
     public Slider healthSlider;
 
-    public void CreateButton(Controllable theControllable) 
+    public void CreateButton(LeaderController leader) 
     {
         GameObject newButton = Instantiate(prafab, father.transform);
-        UpdataCreateButton(theControllable);
+        UpdataCreateButton(leader);
     }
 
-    void UpdataCreateButton(Controllable theControllable) 
+    void UpdataCreateButton(LeaderController leader) 
     {
-        nameText.text = theControllable.name;
-        healthSlider.maxValue = theControllable.maxHealth;
-        healthSlider.value = theControllable.currentHealth;
+        nameText.text = leader.name;
+        healthSlider.maxValue = leader.maxHealth;
+        healthSlider.value = leader.currentHealth;
     }
 }

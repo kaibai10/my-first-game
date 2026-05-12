@@ -5,18 +5,18 @@ using UnityEngine.UI;
 
 public class SkillSelectButton : MonoBehaviour
 {
-    public Skill assignedSkill;
+    public SkillBase assignedSkill;
     public Image skillIcon;
 
-    public void UpdateButtonInfo(Skill theSkill) 
+    public void UpdateButtonInfo(SkillBase theSkill) 
     {
         assignedSkill = theSkill;
-        skillIcon.sprite = theSkill.icon;
+        skillIcon.sprite = theSkill.skillData.icon;
     }
 
     public void ActivedButton() 
     {
-        CharacterSelectSystem.instance.currentCharacter.skills[SkillSelectSystem.instance.currentskillIndex] = assignedSkill;   //将技能赋值给角色
-        SkillSelectSystem.instance.selectedSkillButtonList[SkillSelectSystem.instance.currentskillIndex].UpdateButtonInfo(assignedSkill.icon);
+        CharacterSelectSystem.instance.currentCharacter.GetComponent<SkillController>().equippedSkills[SkillSelectSystem.instance.currentskillIndex] = assignedSkill;
+        SkillSelectSystem.instance.selectedSkillButtonList[SkillSelectSystem.instance.currentskillIndex].UpdateButtonInfo(assignedSkill.skillData.icon);
     }
 }

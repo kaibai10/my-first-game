@@ -18,7 +18,8 @@ public class MouseClickPanelUpdata : MonoBehaviour
     public Image character_Image;
     [SerializeField]
     private LeaderController leader;
-    public List<SkillActivation> skillSelectButtons;
+    private SkillController skillController;
+    public List<SkillManager> skillSelectButtons;
 
     // Update is called once per frame
     void Update()
@@ -26,23 +27,24 @@ public class MouseClickPanelUpdata : MonoBehaviour
         if (MouseClickDetection.instance.currentLeader != null)
         {
             leader = MouseClickDetection.instance.currentLeader;
+            skillController = MouseClickDetection.instance.skillController;
             UpdataNameText(leader);
             for (int i = 0; i < skillSelectButtons.Count; i++)
             {
-                skillSelectButtons[i].UpdataSelectedSkillInfo(MouseClickDetection.instance.currentLeader.skills[i]);
+                skillSelectButtons[i].UpdataSelectedSkillInfo(MouseClickDetection.instance.skillController.equippedSkills[i], skillController);
             }
         }
 
-        if (leader.haveSkillIsActivation)
+        if (leader.haveSkillIsActivation)//此处应该修改
         {
-            foreach (SkillActivation button in skillSelectButtons) //为true设置按钮状态为不可点击
+            foreach (SkillManager button in skillSelectButtons) //为true设置按钮状态为不可点击
             {
                 button.GetComponent<Button>().interactable = false;
             }
         }
         else
         {
-            foreach (SkillActivation button in skillSelectButtons) //为flase设置按钮状态为可点击
+            foreach (SkillManager button in skillSelectButtons) //为flase设置按钮状态为可点击
             {
                 button.GetComponent<Button>().interactable = true;
             }

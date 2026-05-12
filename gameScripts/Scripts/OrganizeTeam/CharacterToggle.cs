@@ -30,10 +30,10 @@ public class CharacterToggle : MonoBehaviour
             for (int i = 0; i < 3; i++) 
             {
                 Debug.Log("角色更新，更换全部列表图像");
-                if (assignedCharacter.skills[i] != null)
+                if (assignedCharacter.GetComponent<SkillController>().equippedSkills[i] != null)
                 {
                     Debug.Log("非空调用");
-                    SkillSelectSystem.instance.selectedSkillButtonList[i].UpdateButtonInfo(assignedCharacter.skills[i].icon);
+                    SkillSelectSystem.instance.selectedSkillButtonList[i].UpdateButtonInfo(assignedCharacter.GetComponent<SkillController>().equippedSkills[i].skillData.icon);
                 }
                 else
                 {

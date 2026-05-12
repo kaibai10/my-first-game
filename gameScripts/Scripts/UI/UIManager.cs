@@ -1,15 +1,16 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Xml.Serialization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 
-public class UIController : MonoBehaviour
+public class UIManager : MonoBehaviour
 {
-    public static UIController instance;
+    public static UIManager instance;
 
     private void Awake()
     {
@@ -19,7 +20,7 @@ public class UIController : MonoBehaviour
     public GameObject teamInterface;    //信息面板
     public UnityEngine.UI.Image leaderSideImage;//领队角色头像
     public UnityEngine.UI.Button[] controllableSideImage;//成员角色切换按钮
-    public Controllable[] controllable;    //成员角色
+    public List<LeaderController> controllable;    //成员角色       替换为AllCharacter.leaderChotroller
     public UnityEngine.UI.Image characterillustration;//选中角色立绘
     private int selectedindex;//当前选中角色下标
 
@@ -27,24 +28,34 @@ public class UIController : MonoBehaviour
     public GameObject membersView;  //成员视图
     public CanvasGroup canvasGroup; //控制透明度
     private bool is_ShowMembers;    //成员视图是否展开
-    public float floatSpeed;    //浮动速度
-    public float floatSpeedTime;//每次浮动时间
+    private float floatSpeed = 10f;    //浮动速度
+    private float floatSpeedTime = 1f;//每次浮动时间
     private float speedTimeCounter;//计时器
     public AnimationCurve showCurve;
     public AnimationCurve hideCurve;//曲线
     private bool is_ShowCoroutines; //协程控制
     public UnityEngine.UI.Image unfoldImage;
-     
+
+    public ShopPanel shopPanel;
+    public MedicalPanel medicalPanel;
+    //每次访问 isPanelOpening 时，都会重新计算 shopPanel.gameObject.activeSelf 的值。=> 右侧的表达式会在每次访问 isPanelOpening 时被求值。
+    private bool isShowShopPanel => shopPanel.gameObject.activeSelf; 
+    private bool isShowMedicalPanel => medicalPanel.gameObject.activeSelf;
     private void Start()
     {
         speedTimeCounter = 0;
         is_ShowMembers = false;
         UpdataCharacter_Side();
+
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (controllable == null || controllable.Count == 0) controllable = AllCharacter.leaderControllers;
+        if(isShowShopPanel && Input.GetKeyDown(KeyCode.Escape)) { shopPanel.Hide(); }
+        if(isShowMedicalPanel && Input.GetKeyDown(KeyCode.Escape)) { medicalPanel.Hide(); }
+
         if (Input.GetKeyDown(KeyCode.K)) 
         {
             if (teamInterface.activeSelf == false) 
@@ -54,8 +65,8 @@ public class UIController : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.L))
         {
-            for (int i = 0; i < controllable.Length; i++)
-            {   for (int j = i; j < controllable.Length; j++)
+            for (int i = 0; i < controllable.Count; i++)
+            {   for (int j = i; j < controllable.Count; j++)
                     SimpleCharacterState.instance.CreateButton(controllable[j]);
             }
         }
@@ -91,6 +102,32 @@ public class UIController : MonoBehaviour
                 }
             }
         }
+    }
+
+    private void OnEnable()
+    {
+        // 脚本启动时订阅事件：当有人广播 OnShopRequest 时，执行 OpenShopWindow 方法
+        GameEvents.OnShopRequest += ShowShopPanel;
+
+        GameEvents.OpenMedicalPanelRequest += ShowMedicalPanel;
+    }
+    private void OnDisable()
+    {
+        // 脚本销毁时取消订阅事件，必须取消订阅，否则会造成内存泄漏或空引用错误
+        GameEvents.OnShopRequest -= ShowShopPanel;
+
+        GameEvents.OpenMedicalPanelRequest -= ShowMedicalPanel;
+    }
+
+    //显示医疗界面接口
+    public void ShowMedicalPanel() 
+    {
+        if (!isShowMedicalPanel) medicalPanel.Show();
+    }
+    //显示商店界面接口
+    public void ShowShopPanel(List<ItemsData> items) 
+    {
+        if (!isShowShopPanel) shopPanel.Show(items);   //当shopPanel被激活时，不可被再次Show
     }
 
     void UpdataCharacter_Side()

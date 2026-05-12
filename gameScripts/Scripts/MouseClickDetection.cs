@@ -15,6 +15,7 @@ public class MouseClickDetection : MonoBehaviour
 
     [HideInInspector]
     public LeaderController currentLeader;
+    public SkillController skillController;
     private LeaderController lastLeader;
     public LayerMask mask;
     private int clickTimes = 0;
@@ -31,6 +32,7 @@ public class MouseClickDetection : MonoBehaviour
     void HandleLeftClickSelection()
     {
         if (!Input.GetMouseButtonDown(0)) return;
+        if (skillController != null && (skillController.haveSkillSelected || skillController.lastCastFrame == Time.frameCount)) return;
 
         Vector3 mouseWorldPos = GetMousePos.instance.GetMousePosition();
         Vector2 mousePos2D = new Vector2(mouseWorldPos.x, mouseWorldPos.y);
@@ -39,7 +41,8 @@ public class MouseClickDetection : MonoBehaviour
 
         if (hit.collider != null)
         {
-            currentLeader = hit.collider.gameObject.GetComponent<LeaderController>();
+            currentLeader = hit.collider.GetComponent<LeaderController>();
+            skillController = hit.collider.GetComponent<SkillController>();
             clickTimes = 1;
         }
         else
@@ -52,9 +55,12 @@ public class MouseClickDetection : MonoBehaviour
     //获取移动目标位置
     void HandleMoveInput()
     {
-        // 技能释放或键盘移动中时，不响应鼠标移动
-        if (MouseClickEventsController.instance.selectedCharacter_Skill_Release || MouseClickEventsController.instance.character_Move_Key)
-            return;
+        // 技能释放或键盘移动中时，不触发鼠标移动
+        if (MouseClickEventsController.instance.selectedCharacter_Skill_Release || MouseClickEventsController.instance.character_Move_Key) return;
+        // 【新增拦截】：这一帧刚释放了技能，禁止移动（非常关键）！
+        if (skillController != null && skillController.lastCastFrame == Time.frameCount) return;
+        // 有技能处于选中状态，不触发鼠标移动
+        if (skillController.haveSkillSelected) return;  
 
         if (currentLeader != null && Input.GetMouseButtonDown(0))
         {
@@ -68,7 +74,6 @@ public class MouseClickDetection : MonoBehaviour
                 return;
             }
 
-            //Vector3 targetMovePosition = GetMousePos.instance.GetMousePosition();
             currentLeader.targetPosition = GetMousePos.instance.GetMousePosition();
         }
     }
@@ -82,6 +87,7 @@ public class MouseClickDetection : MonoBehaviour
             return;
 
         currentLeader = null;
+        skillController = null;
         lastLeader = null;
         clickTimes = 0;
     }

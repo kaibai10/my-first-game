@@ -9,8 +9,7 @@ public class EnemiesBase : MonoBehaviour
     public int height = 0; //¸Ã¶ÔÏóËù´¦µÄ¸ß¶È²ã
 
     [Header("ÆÕÍ¨¹¥»÷·¶Î§/¹¥»÷ÉËº¦")]
-    public float attackRange;
-    public int attackAmount;
+    public float attackRange, attackDamage;
 
     [Header("³ğºŞ·¶Î§/³ğºŞÖµ/³ğºŞ¼ì²âÍ¼²ã")]
     public float hateRange;

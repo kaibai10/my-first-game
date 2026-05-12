@@ -44,26 +44,6 @@ public class MyGrid : MonoBehaviour
 
     private void BuildGrid()
     {
-        //导致地图大小很大的原因
-        //// 先找到全局最小的 min（所有层的最左下）
-        //Vector3Int globalMin = maps[0].cellBounds.min;
-        //foreach (var map in maps)
-        //{
-        //    globalMin = Vector3Int.Min(globalMin, map.cellBounds.min);
-        //}
-
-        //// 然后用 globalMin 作为统一原点
-        //minCell = globalMin;
-
-        //// Width/Height 用全局最大范围
-        //Vector3Int globalMax = maps[0].cellBounds.max;
-        //foreach (var map in maps)
-        //{
-        //    globalMax = Vector3Int.Max(globalMax, map.cellBounds.max);
-        //}
-        //Width = globalMax.x - globalMin.x;
-        //Height = globalMax.y - globalMin.y;
-
         nodes = new MyNode[Width, Height, mapHeight];
 
         for (int h = 0; h < mapHeight; h++)
@@ -82,7 +62,6 @@ public class MyGrid : MonoBehaviour
 
                     MyNode node = new MyNode(i, j, h, (Vector2)worldCenter, walkable);
 
-                    Debug.Log($"单元格({i},{j},{h})初始化完成,其tile是否存在：{tile},其walkable为:{walkable}");
                     // 底层 node 向上层复制
                     if (tile == null) continue;
                     for (int t = h; t < mapHeight; t++)

@@ -8,7 +8,7 @@ public class MainMenuController : MonoBehaviour
 
     public void StartGame() 
     {
-        SceneManager.LoadScene("OrganizeTeamScreen");
+        SceneManager.LoadScene("OrganizeTeamScene");
     }
 
     public void ExitGame() 

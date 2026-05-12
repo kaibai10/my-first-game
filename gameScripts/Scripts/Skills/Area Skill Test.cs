@@ -2,103 +2,89 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AreaSkillTest : Skill
+public class AreaSkillTest : SkillBase
 {
     public float startDamageTime;//触发伤害时间
     private float timeCounter;
-    public GameObject parent;
-    public LeaderController controller;
-    private float lifeTimeCounter;//生命周期
-    private bool resetTimeCounter = true;
-
-    private SkillTrigger mySkillTrigger;
 
     private void Awake()
     {
-        mySkillTrigger = GetComponentInChildren<SkillTrigger>();
+        leader = GetComponentInParent<LeaderController>();
+        Initialize(skillData);
     }
 
     private void OnEnable()
     {
-        controller.anim.SetBool("Is_Skill_3Begin", true);
-        lifeTimeCounter = skillStats[spellAbility].duration;
+        leader.anim.SetBool("Is_Skill_3Begin", true);
+        timeCounter = startDamageTime;
     }
 
-    private void Update()
+    public override void Update()
     {
-        Attack();
-
-        if (mySkillTrigger.enemies != null && mySkillTrigger.enemies.Count > 0)
+        //技能生命周期
+        durationTimer -= Time.deltaTime;
+        if (durationTimer <= 0)
         {
-            if (controller.anim.GetBool("Enemies_Survival") == false)
-            {
-                controller.anim.SetBool("Enemies_Survival", true);
-                timeCounter = startDamageTime;
-            }
-        }
-        else if (mySkillTrigger.enemies == null || mySkillTrigger.enemies.Count <= 0)
-        {
-            controller.anim.SetBool("Enemies_Survival", false);
-            timeCounter = 0;
+            FinishSkill();
         }
 
-        if (timeCounter > 0)
-        {
-            //每次攻击范围内敌人不为空时播放技能动画——之后只要敌人不为空，则循环
-            //每次攻击范围内敌人不为空时并且首次timeCounter归零时，触发伤害——之后只要敌人不为空，则循环
-            timeCounter -= Time.deltaTime;
-            if (timeCounter <= 0)
-            {
-                Debug.Log("技能3命中敌人");
-                timeCounter = skillStats[spellAbility].timeBetweenAttacks; //设置攻击间隔
-                int attackAmount = Mathf.Min(skillStats[spellAbility].amount, mySkillTrigger.enemies.Count); //可攻击敌人数量   取两者中的最小值
-                for (int i = 0; i < attackAmount; i++)
-                {
-                    mySkillTrigger.enemies[i].TakeDamage(skillStats[spellAbility].damage);
-                    Debug.Log("对敌人：" + mySkillTrigger.enemies[i].name+" 造成了：" + skillStats[spellAbility].damage + "点伤害");
-                }
-                Debug.Log("攻击到的敌人数量为：" + attackAmount);
-            }
-        }
-
-        lifeTimeCounter -= Time.deltaTime;
-        if (lifeTimeCounter <= 0)
-        {
-            if (isDestory == true)
-                Destroy(gameObject);
-            else
-                gameObject.SetActive(false);
-        }
+        ExecuteEffect();
     }
 
-    private void Attack() 
+    //技能释放逻辑
+    public override void ExecuteEffect() 
     {
-        bool hasEnemies = mySkillTrigger.enemies != null && mySkillTrigger.enemies.Count > 0;
-        controller.anim.SetBool("Enemies_Survival", hasEnemies);
-
+        bool hasEnemies = skillTrigger.enemies != null && skillTrigger.enemies.Count > 0;
+        leader.anim.SetBool("Is_Attacking", hasEnemies);
+        Debug.Log("HaveEnemy的值为"+hasEnemies);
+        //重置起始伤害时间
         if (hasEnemies == false)
-            resetTimeCounter = true;
-        if (resetTimeCounter == true)
+            timeCounter = startDamageTime;
+
+        //bool hasEnemies = skillTrigger.enemies != null && skillTrigger.enemies.Count > 0;
+        if (hasEnemies) //开始攻击
         {
-            if (hasEnemies)
+            leader.anim.SetBool("Is_Attacking", true);
+
+            if (timeCounter > 0)
             {
-                timeCounter = startDamageTime;
-                resetTimeCounter = false;
-            }
-            else
-            {
-                timeCounter = 0;
+                //每次攻击范围内敌人不为空时播放技能动画——之后只要敌人不为空，则循环
+                //每次攻击范围内敌人不为空时并且首次timeCounter归零时，触发伤害——之后只要敌人不为空，则循环
+                timeCounter -= Time.deltaTime;
+                if (timeCounter <= 0)
+                {
+                    Debug.Log("技能3命中敌人");
+                    timeCounter = skillData.stats[skillData.skillLevel].attackInterval; //设置攻击间隔
+                    int attackAmount = Mathf.Min(skillData.stats[skillData.skillLevel].attackAmount, skillTrigger.enemies.Count); //可攻击敌人数量   取两者中的最小值
+                    for (int i = 0; i < attackAmount; i++)
+                    {
+                        skillTrigger.enemies[i].TakeDamage(skillData.stats[skillData.skillLevel].damage);
+                        Debug.Log("对敌人：" + skillTrigger.enemies[i].name + " 造成了：" + skillData.stats[skillData.skillLevel].damage + "点伤害");
+                    }
+                    Debug.Log("攻击到的敌人数量为：" + attackAmount);
+                }
             }
         }
+    }
+
+    //技能结束逻辑
+    public override void FinishSkill() 
+    {
+        //进入CD
+        if (skillData.skillFinishInCD) skillController.StartCoolDown(skillSlot, skillData.stats[skillData.skillLevel].cd);
+
+        skillController.CleanupPreviewState();
+
+        if (isDestory == true) Destroy(gameObject);
+        else gameObject.SetActive(false);
     }
 
     private void OnDisable()
     {
-        //controller.SetAllBool(controller.anim, false);
         Debug.Log("out skill_3");
-        controller.haveSkillIsActivation = false;
-        controller.normalAttack.SetActive(true);
-        controller.anim.SetBool("Is_Skill_3Begin", false);
-        controller.currentTrigger = controller.skillTriggers[LeaderController.skillType.attack];
+        leader.haveSkillIsActivation = false;
+        leader.normalAttack.SetActive(true);
+        leader.anim.SetBool("Is_Skill_3Begin", false);
+        leader.currentTrigger = leader.skillTriggers[LeaderController.skillSlot.attack];
     }
 }

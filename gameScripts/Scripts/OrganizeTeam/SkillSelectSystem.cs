@@ -23,7 +23,7 @@ public class SkillSelectSystem : MonoBehaviour
     public string currentCareer;
     public int currentskillIndex;   //要选择的技能是技能几
     public List<Button> currentSkillsList;//当前显示的技能列表，更新时需清除后重新添加
-    public List<Skill> targetShowSkillSet;//要显示的技能列表
+    public List<SkillBase> targetShowSkillSet;//要显示的技能列表
     public Button skillPrefab;
     public GameObject skillPrefabParent;
 
@@ -58,9 +58,10 @@ public class SkillSelectSystem : MonoBehaviour
     public void UpdateCurrentSkillList()
     {
         //更新前先清除List列表
-        foreach (Button button in currentSkillsList) 
+        foreach (Button button in currentSkillsList)        //一些技能为空，所以不会消失
         {
             Destroy(button.gameObject);
+            Debug.Log("销毁按钮");
         }
         currentSkillsList.Clear();
 
@@ -71,7 +72,7 @@ public class SkillSelectSystem : MonoBehaviour
         else if (currentskillIndex == 2)
             targetShowSkillSet = skillsController[CharacterSelectSystem.instance.currentCareer].skillSet3;
 
-        foreach (Skill skill in targetShowSkillSet)
+        foreach (SkillBase skill in targetShowSkillSet)
         {
             Button newSelectionSkillButton = Instantiate(skillPrefab, skillPrefabParent.transform);
             if (newSelectionSkillButton.gameObject.activeSelf == false)
@@ -79,13 +80,15 @@ public class SkillSelectSystem : MonoBehaviour
                 newSelectionSkillButton.gameObject.SetActive(true);
             }
             SkillSelectButton newSelectionSkillScript = newSelectionSkillButton.GetComponent<SkillSelectButton>();
-
+            if (newSelectionSkillScript == null) { Debug.Log("new为空"); }
             //将Button自带的Image属性赋值到，SkillSelectButton脚本中的Image属性上
             Image theButtonImage = newSelectionSkillButton.GetComponent<Image>();
             newSelectionSkillScript.skillIcon = theButtonImage;
 
             //为生成的新Button按钮添加监听事件
+            Debug.Log("设置点击事件前");
             newSelectionSkillButton.onClick.AddListener(newSelectionSkillScript.ActivedButton);
+            Debug.Log("设置点击事件后");
 
             //更新图像不再像CharacterSelectSystem那样放在update函数中，修改为创建时就调用
             newSelectionSkillScript.UpdateButtonInfo(skill);
@@ -100,7 +103,7 @@ public class SkillSelectSystem : MonoBehaviour
 [System.Serializable]
 public class CareerSkills
 {
-    public List<Skill> skillSet1;
-    public List<Skill> skillSet2;
-    public List<Skill> skillSet3;
+    public List<SkillBase> skillSet1;
+    public List<SkillBase> skillSet2;
+    public List<SkillBase> skillSet3;
 }

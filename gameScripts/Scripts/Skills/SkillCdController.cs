@@ -11,7 +11,7 @@ public class SkillCdController : MonoBehaviour
     }
 
     //开启技能后需同时设置is_cd 和 timeCounter_cd;
-    public void StartCd(Skill selectedSkill, float cd)
+    public void StartCd(SkillBase selectedSkill, float cd)
     {
         Debug.Log("开始cd");
         selectedSkill.is_cd = true;
@@ -19,7 +19,7 @@ public class SkillCdController : MonoBehaviour
 
         StartCoroutine(StayCd(selectedSkill));
     }
-    IEnumerator StayCd(Skill selectedSkill)
+    IEnumerator StayCd(SkillBase selectedSkill)
     {
         while (selectedSkill.timeCounter_cd > 0)
         {
